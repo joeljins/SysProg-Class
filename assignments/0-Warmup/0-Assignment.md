@@ -35,10 +35,13 @@ Please provide answers to these questions using markdown notation and place them
 
 
 3. Please provide a link to the repository you are using for this class.
+
 https://github.com/joeljins/SysProg-Class
 
 4. Briefly describe what you want to get out of this class.
+
 I wish to learn foundational knowledge that will help me to more easily learn and understand future programming concepts.
 
 5. Briefly describe any concerns you might be having with being successful in this class (if any).
+
 I don't have any concerns as of yet.
