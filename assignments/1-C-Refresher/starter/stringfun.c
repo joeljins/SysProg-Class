@@ -49,7 +49,9 @@ int main(int argc, char *argv[]){
     int  user_str_len;      //length of user supplied string
 
     //TODO:  #1. WHY IS THIS SAFE, aka what if arv[1] does not exist?
-    //      PLACE A COMMENT BLOCK HERE EXPLAINING
+    //      PLACE A COMMENT BLOCK HERE EXPLAINING 
+    //      The code checks if at least 2 arguments exist. In OR statements, if the first conditional returns false, the second
+    //      conditonal won't be checked. If argc is at least 2, argv[1] will always exist, so accessing argv[1] is safe.  
     if ((argc < 2) || (*argv[1] != '-')){
         usage(argv[0]);
         exit(1);
@@ -67,6 +69,8 @@ int main(int argc, char *argv[]){
 
     //TODO:  #2 Document the purpose of the if statement below
     //      PLACE A COMMENT BLOCK HERE EXPLAINING
+    //      If argc is less than 3, it means that a string is not provided. "stringfun" should be the first argument. An operation
+    //      should be the second argument. A string for the operation to perform on is the third argument. 
     if (argc < 3){
         usage(argv[0]);
         exit(1);
