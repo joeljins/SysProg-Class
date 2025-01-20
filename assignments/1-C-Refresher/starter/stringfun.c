@@ -79,23 +79,29 @@ int count_words(char *buff, int len, int str_len){
 		}	
 		buff++;
 		n++;
+		if (n>len){
+			break;
+		}
 	}
 	return count;
 }
 
 int replace_string(char* old, char*new, int len, char* buff){
+	// Creates a copy of the buffer for the existing buffer to reference once a word has been matched. 
+	// Once the buffer has copied the new word, it can referecing its copy for the remaining words of the orignal string. 
 	int n = 0;
 	char* buff_copy = (char*)malloc(len); 
 	if (buff_copy == NULL) {
         	printf("Memory allocation failed!\n");
-        return -1;
+        	exit (99);
     	}
+	bool match = NULL;
 	memcpy(buff_copy, buff, len);
-	while (n<len){
+	while (n<len+1){
 		if (*buff == *old){
 			char* ref = buff;
 			char* reset = old;
-			bool match = true;
+			match = true;
 			while (*old != '\0'){
 				if (*buff != *old){
 					match = false;
@@ -113,15 +119,17 @@ int replace_string(char* old, char*new, int len, char* buff){
 					buff++;
 					n++;
 				}
-				int overflow = n;
+				int overflow = 0;
 				while( *buff_copy != ' ' && *buff_copy != '\t' && *buff_copy != '.' ){
 					buff_copy++;
+					// handles edge case
 					overflow++;
-					if (n+overflow>len){
-						return -1;
+					if (n+overflow>len-1){
+						break;
 					}
 
 				}
+				n -= overflow;
 				while (n<len){
 					*buff = *buff_copy;
 					buff++;
@@ -133,15 +141,19 @@ int replace_string(char* old, char*new, int len, char* buff){
 				buff = ref;
 				old = reset;
 			}
-		if (n>BUFFER_SZ){
-			exit(-1);
+		}
+		if (n>len){
+			return -1;
 		}
 		buff++;
 		buff_copy++;
 		n++;
 	}
+	if (match == true){
+		return 0;
+	}
+	return -1;
 }
-
 //ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
 
 int main(int argc, char *argv[]){
@@ -211,15 +223,30 @@ int main(int argc, char *argv[]){
 		    break;
 
 	    case 'r':
-		    while (*buff != '.'){
-			   buff++;
+		    // Creates a new buffer. Pointer iterates towards the end of the existing buffer. When the existing buffer is iterated backwards,
+		    // it adds each character to the new buffer. 
+		    int len = BUFFER_SZ;
+		    char* buff_copy = (char*)malloc(len);
+		    if (buff_copy == NULL) {
+			printf("Memory allocation failed!\n");
+			exit (-1);
 		    }
-		    printf("Reversed String: ");
-		    while (pointer != buff){
+		    char* head = buff_copy;
+		    int n  = 0;
+		    while (*buff != '.' && (n<len)){
+			   buff++;
+			   n++;
+		    }
+		    if ( *buff == '.' ){
+			    buff--;
+		    }
+		    while (n>0){
+			   *buff_copy = *buff; 
 			   buff--;
-			    printf("%c", *buff);
+			   buff_copy++;
+			   n--;
 		    } 
-		    printf("\n");
+		    buff = head;
 		    break;
 
 		case 'w':
@@ -249,11 +276,14 @@ int main(int argc, char *argv[]){
 
 		case 'x':
 			if ( argc < 5 ){
-				exit(1);
+				exit(-1);
 			}
 			char* old = argv[3];
 			char* new = argv[4];
-			replace_string(old, new, BUFFER_SZ, buff);
+			int check = replace_string(old, new, BUFFER_SZ, buff);
+			if (check != 0){
+				exit (-1);
+			}
 			break;
 
         //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
@@ -275,3 +305,8 @@ int main(int argc, char *argv[]){
 //          the buff variable will have exactly 50 bytes?
 //  
 //          PLACE YOUR ANSWER HERE
+//          Accessing data to an address beyond the allocated memory range can results in undefined or unexpected behavior.
+//          Your code could trigger segmentation faults, and it might be hard to find the line of code at fault. Providing both the pointer
+//          and the length can make sure that you don't access beyond the allocated memory range, helping you to avoid segmentation faults 
+//          that are hard to trace. It prevents buffer overflow by helping you check bounds for the allocated range. Finally, it can maintain
+//          clean coding practices for other software developers who might need to build upon or reference your codee.  
