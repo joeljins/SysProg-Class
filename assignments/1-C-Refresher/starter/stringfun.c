@@ -20,17 +20,23 @@ int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
     int n = 0;  
     int count;
-    while (n < len){
-	if (n > 0 && ( *user_str == ' ' || *user_str == '\t' )){
-		if (*(user_str - 1) == ' ' || *(user_str - 1) == '\t'){
-			while ( *user_str == ' ' || *user_str == '\t' ){
-				user_str++;
-			}
+    bool found = false;
+    while (n < len+1){
+	if (*user_str == ' ' || *user_str == '\t'){
+		char ref = *user_str;
+		while ( *user_str == ' ' || *user_str == '\t' ){
+					user_str++;
 		}
-    	}
+		if (n != 0 && *user_str != '\0'){							// Handle cases where space(s) aren't the first character
+			*buff = ref;
+			buff++;
+			n++;
+		}
+	}	
 	if (*user_str == '\0'){
 		*buff = '.';	
 		count = n;
+		found = true;
 	}
 	else{
 		*buff = *user_str;
@@ -39,14 +45,19 @@ int setup_buff(char *buff, char *user_str, int len){
 	buff++;
 	n++;
     }
+    if (found == false){
+	    return -1;
+    }
     return count;
 }
 
 void print_buff(char *buff, int len){
     printf("Buffer:  ");
+    printf("[");
     for (int i=0; i<len; i++){
         putchar(*(buff+i));
     }
+    printf("]");
     putchar('\n');
 }
 
@@ -125,7 +136,7 @@ int main(int argc, char *argv[]){
     user_str_len = setup_buff(buff, input_string, BUFFER_SZ);     //see todos
     if (user_str_len < 0){
         printf("Error setting up buffer, error = %d", user_str_len);
-        exit(2);
+        exit(-1);
     }
 
     char* pointer = buff;
@@ -141,32 +152,40 @@ int main(int argc, char *argv[]){
 		    break;
 
 	    case 'r':
-		    while (*pointer != '.'){
-			   pointer++;
+		    while (*buff != '.'){
+			   buff++;
 		    }
-		    printf("Reversed String:");
+		    printf("Reversed String: ");
 		    while (pointer != buff){
-			   pointer--;
-			    printf("%c", *pointer);
+			   buff--;
+			    printf("%c", *buff);
 		    } 
+		    printf("\n");
 		    break;
 
 		case 'w':
+		    	printf( "Word Print\n----------\n");
 		    	int count = 0;
+			int order = 1;
 			while (*(pointer) != '.'){
 				if ( (*(pointer) == ' ') ||  (*(pointer) == '\t')){
 					if ( count>0 ){
-						printf(" (%d) \n", count);	
+						printf("(%d)\n", count);	
 						count = 0;
 					}
 				}
 				else{
 					count++;
+					if (count == 1){
+						printf("%d. ", order);
+						order++;
+					}
 					printf("%c", *pointer);
 				}
 				pointer++;
 			}
-				printf(" (%d) \n", count);	
+			printf("(%d) \n", count);	
+			printf("\nNumber of words returned: %d\n", order-1);
 			break;
 
 		case 'x':
@@ -175,13 +194,14 @@ int main(int argc, char *argv[]){
 			}
 			char* old = argv[3];
 			char* new = argv[4];
-			while (*pointer != '.'){
-				if ( *pointer == *old ){
-					char* ref = pointer;
-					char* reset = old;
+			int counter = 0;
+			while (counter<BUFFER_SZ){
+				if (*pointer == *old){
+					char* ref = pointer; // Save reference before word match
+					char* reset = old; // Reset pointer for old word
 					bool match = true;
-					while ( *old != '\0' ){
-						if ( *pointer != *old ){
+					while (*old != '\0'){
+						if (*pointer != *old){
 							match = false;
 							break;
 						}
@@ -190,21 +210,38 @@ int main(int argc, char *argv[]){
 						old++;
 					}
 					if ( match == true ){
-						// printf("success");
-						while( *new != '\0'){
-							printf( "%c", *new); 
-							new++;
-						}
+						pointer = ref;
 						old = reset;
+						while( *new != '\0'){
+							//printf( "%c", *new); 
+							*pointer = *new;
+							new++;
+							pointer++;
+							counter++;
+						}
+						while (counter<BUFFER_SZ){
+							*pointer = *ref;
+							pointer++;
+							ref++;
+							counter++;
+						}
+						//while( *pointer != ' ' && *pointer != '\t' && *pointer != '.' ){
+						//	pointer++;
+						//}
 					}
 					else{
 						pointer = ref;
 						old = reset;
 					}
 				}
-				printf( "%c", *pointer );
+				//printf( "%c", *pointer );
+				if (counter>BUFFER_SZ){
+					exit(-1);
+				}
 				pointer++;
+				counter++;
 			}
+			printf("\n");
 			break;
 
 
@@ -218,6 +255,7 @@ int main(int argc, char *argv[]){
 
     //TODO:  #6 Dont forget to free your buffer before exiting
     print_buff(buff,BUFFER_SZ);
+    free(buff);
     exit(0);
 }
 //TODO:  #7  Notice all of the helper functions provided in the 
