@@ -87,9 +87,9 @@ int replace_string(char* old, char*new, int len, char* buff){
 	int n = 0;
 	char* buff_copy = (char*)malloc(len); 
 	if (buff_copy == NULL) {
-        printf("Memory allocation failed!\n");
+        	printf("Memory allocation failed!\n");
         return -1;
-    }
+    	}
 	memcpy(buff_copy, buff, len);
 	while (n<len){
 		if (*buff == *old){
@@ -113,7 +113,16 @@ int replace_string(char* old, char*new, int len, char* buff){
 					buff++;
 					n++;
 				}
-				while (n<BUFFER_SZ){
+				int overflow = n;
+				while( *buff_copy != ' ' && *buff_copy != '\t' && *buff_copy != '.' ){
+					buff_copy++;
+					overflow++;
+					if (n+overflow>len){
+						return -1;
+					}
+
+				}
+				while (n<len){
 					*buff = *buff_copy;
 					buff++;
 					buff_copy++;
@@ -124,7 +133,6 @@ int replace_string(char* old, char*new, int len, char* buff){
 				buff = ref;
 				old = reset;
 			}
-		}
 		if (n>BUFFER_SZ){
 			exit(-1);
 		}
@@ -245,7 +253,7 @@ int main(int argc, char *argv[]){
 			}
 			char* old = argv[3];
 			char* new = argv[4];
-			replace_string(old, new, BUFFER_SZ, buff)
+			replace_string(old, new, BUFFER_SZ, buff);
 			break;
 
         //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
