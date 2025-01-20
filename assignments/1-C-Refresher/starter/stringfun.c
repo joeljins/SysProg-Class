@@ -83,6 +83,57 @@ int count_words(char *buff, int len, int str_len){
 	return count;
 }
 
+int replace_string(char* old, char*new, int len, char* buff){
+	int n = 0;
+	char* buff_copy = (char*)malloc(len); 
+	if (buff_copy == NULL) {
+        printf("Memory allocation failed!\n");
+        return -1;
+    }
+	memcpy(buff_copy, buff, len);
+	while (n<len){
+		if (*buff == *old){
+			char* ref = buff;
+			char* reset = old;
+			bool match = true;
+			while (*old != '\0'){
+				if (*buff != *old){
+					match = false;
+					break;
+				}
+				buff++;
+				old++;
+			}
+			if ( match == true ){
+				buff = ref;
+				old = reset;
+				while( *new != '\0'){
+					*buff = *new;
+					new++;
+					buff++;
+					n++;
+				}
+				while (n<BUFFER_SZ){
+					*buff = *buff_copy;
+					buff++;
+					buff_copy++;
+					n++;
+				}
+			}
+			else{
+				buff = ref;
+				old = reset;
+			}
+		}
+		if (n>BUFFER_SZ){
+			exit(-1);
+		}
+		buff++;
+		buff_copy++;
+		n++;
+	}
+}
+
 //ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
 
 int main(int argc, char *argv[]){
@@ -194,57 +245,8 @@ int main(int argc, char *argv[]){
 			}
 			char* old = argv[3];
 			char* new = argv[4];
-			int counter = 0;
-			while (counter<BUFFER_SZ){
-				if (*pointer == *old){
-					char* ref = pointer; // Save reference before word match
-					char* reset = old; // Reset pointer for old word
-					bool match = true;
-					while (*old != '\0'){
-						if (*pointer != *old){
-							match = false;
-							break;
-						}
-						// printf( " %c %c ", *pointer, *old);
-						pointer++;
-						old++;
-					}
-					if ( match == true ){
-						pointer = ref;
-						old = reset;
-						while( *new != '\0'){
-							//printf( "%c", *new); 
-							*pointer = *new;
-							new++;
-							pointer++;
-							counter++;
-						}
-						while (counter<BUFFER_SZ){
-							*pointer = *ref;
-							pointer++;
-							ref++;
-							counter++;
-						}
-						//while( *pointer != ' ' && *pointer != '\t' && *pointer != '.' ){
-						//	pointer++;
-						//}
-					}
-					else{
-						pointer = ref;
-						old = reset;
-					}
-				}
-				//printf( "%c", *pointer );
-				if (counter>BUFFER_SZ){
-					exit(-1);
-				}
-				pointer++;
-				counter++;
-			}
-			printf("\n");
+			replace_string(old, new, BUFFER_SZ, buff)
 			break;
-
-
 
         //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
         //       the case statement options
