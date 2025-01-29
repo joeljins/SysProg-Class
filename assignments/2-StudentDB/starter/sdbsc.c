@@ -63,7 +63,18 @@ int open_db(char *dbFile, bool should_truncate)
 int get_student(int fd, int id, student_t *s)
 {
     // TODO
-    return NOT_IMPLEMENTED_YET;
+    int offset = id * STUDENT_RECORD_SIZE;
+    if (offset < 0 || offset > 1001 * STUDENT_RECORD_SIZE){
+	    return SRCH_NOT_FOUND;
+    }
+    off_t position = lseek(fd, offset, SEEK_SET);
+    ssize_t data = read(fd, s, STUDENT_RECORD_SIZE);
+    
+    if (position == -1 || data == -1){
+	    return ERR_DB_FILE;
+    }
+
+    return NO_ERROR; 
 }
 
 /*
