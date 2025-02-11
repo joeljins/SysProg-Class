@@ -5,7 +5,7 @@ Please answer the following questions and submit in your repo for the second ass
 
 1. In this assignment I asked you provide an implementation for the `get_student(...)` function because I think it improves the overall design of the database application.   After you implemented your solution do you agree that externalizing `get_student(...)` into it's own function is a good design strategy?  Briefly describe why or why not.
 
-    > **Answer**:  _start here_
+    > **Answer**:  I think its a good design strategy because it let me split the implementation of the function into two testable parts. Once I got get_student() working, I could confirm that any error was the result of a mistake in the second part of the code. Also, if further functionality needs to be added, get_student() will likely be useful in it.
 
 2. Another interesting aspect of the `get_student(...)` function is how its function prototype requires the caller to provide the storage for the `student_t` structure:
 
@@ -39,7 +39,7 @@ Please answer the following questions and submit in your repo for the second ass
     ```
     Can you think of any reason why the above implementation would be a **very bad idea** using the C programming language?  Specifically, address why the above code introduces a subtle bug that could be hard to identify at runtime? 
 
-    > **ANSWER:** _start here_
+    > **ANSWER:** The memory will cease to exist after function has been called. Therfore, when the address of student is returned, the address will be random/NULL/undefined behavior. The memory is only allocated in the stack during the runtime of the function. This return what is commonly known as a dangling pointer.  
 
 3. Another way the `get_student(...)` function could be implemented is as follows:
 
@@ -72,7 +72,7 @@ Please answer the following questions and submit in your repo for the second ass
     ```
     In this implementation the storage for the student record is allocated on the heap using `malloc()` and passed back to the caller when the function returns. What do you think about this alternative implementation of `get_student(...)`?  Address in your answer why it work work, but also think about any potential problems it could cause.  
     
-    > **ANSWER:** _start here_  
+    > **ANSWER:** _It would work because you are allocating memory to a heap, so the memory will not be erased after the runtime of the function. A potential problem is that you might forget to free the memory since it was allocated in a function. This can cause memory leaks. Also, it would be hard to tell if NULL was returned because a student wasn't found or because memory could not be allocated.   
 
 
 4. Lets take a look at how storage is managed for our simple database. Recall that all student records are stored on disk using the layout of the `student_t` structure (which has a size of 64 bytes).  Lets start with a fresh database by deleting the `student.db` file using the command `rm ./student.db`.  Now that we have an empty database lets add a few students and see what is happening under the covers.  Consider the following sequence of commands:
@@ -102,11 +102,11 @@ Please answer the following questions and submit in your repo for the second ass
 
     - Please explain why the file size reported by the `ls` command was 128 bytes after adding student with ID=1, 256 after adding student with ID=3, and 4160 after adding the student with ID=64? 
 
-        > **ANSWER:** _start here_
+        > **ANSWER:** Disk storage is assigned in blocks and files are stored in blocks. A block is usually 4000 bytes. ID = 0(0-64); ID = 1(64-128); ID = 2(128-192); ID = 3(192-256). This all fits within the 4000 bytes. However, ID = 64 would occupy (4096-4096+64). This requires another block to be allocated. Also, the space needed for IDs 3-62 have been logically allocated, but don't cost disk storage until they have actually been written. Even though another block has been allocated, linux doesn't have to consider IDs larger than 64 yet. 
 
     -   Why did the total storage used on the disk remain unchanged when we added the student with ID=1, ID=3, and ID=63, but increased from 4K to 8K when we added the student with ID=64? 
 
-        > **ANSWER:** _start here_
+        > **ANSWER:**  Two block are logically allocated because ID=64 requires bytes 4096 to 4160.
 
     - Now lets add one more student with a large student ID number  and see what happens:
 
@@ -119,4 +119,4 @@ Please answer the following questions and submit in your repo for the second ass
         ```
         We see from above adding a student with a very large student ID (ID=99999) increased the file size to 6400000 as shown by `ls` but the raw storage only increased to 12K as reported by `du`.  Can provide some insight into why this happened?
 
-        > **ANSWER:**  _start here_
+        > **ANSWER:**  Because of the concept of sparse files, only the 6400000-6400000+64 bytes have been assigned. The first two blocks have been allocated as well as the block containing the mentioned bytes. Three blocks are logically allocated, but only cost disk space after data has been written to them. 
