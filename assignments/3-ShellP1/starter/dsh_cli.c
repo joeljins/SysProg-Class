@@ -46,20 +46,24 @@
  */
 int main()
 {
-	char *cmd_buff;
+	char *cmd_buff = (char*)malloc(ARG_MAX * sizeof(char));
 	int rc = 0;
 	command_list_t clist;
 	while(1){
 	    printf("%s", SH_PROMPT);
 	    if (fgets(cmd_buff, ARG_MAX, stdin) == NULL){
-	    printf("%s", WARN_NO_CMDS);
+	    printf("%c", WARN_NO_CMDS);
 	    }
 	    cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
 	    if (strcmp(cmd_buff, EXIT_CMD) == 0){
-		printf(CMD_OK_HEADER);
+		printf("%c", CMD_OK_HEADER);
 	        exit(rc);
 	       }
 	    build_cmd_list(cmd_buff, &clist);
-	    printf("%s\n", cmd_buff); 
+	    printf(CMD_OK_HEADER, clist.num);
+	    for (int i = 0; i< clist.num; i++ ){
+		    printf("Executable: %s\n", clist.commands[i].exe);
+		    printf("Arguments: %s\n", clist.commands[i].args);
+	    }
 	}
 	}
