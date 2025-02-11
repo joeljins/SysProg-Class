@@ -52,18 +52,34 @@ int main()
 	while(1){
 	    printf("%s", SH_PROMPT);
 	    if (fgets(cmd_buff, ARG_MAX, stdin) == NULL){
-	    printf("%c", WARN_NO_CMDS);
+		return -1;
 	    }
+	    if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
+		    printf("%s", CMD_WARN_NO_CMD);
+		    return WARN_NO_CMDS;
+	    }	
 	    cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
 	    if (strcmp(cmd_buff, EXIT_CMD) == 0){
-		printf("%c", CMD_OK_HEADER);
 	        exit(rc);
 	       }
-	    build_cmd_list(cmd_buff, &clist);
+	    int status = build_cmd_list(cmd_buff, &clist);
+	    if (status == ERR_TOO_MANY_COMMANDS){
+		    return status;
+	    }
+	    if (status == ERR_CMD_OR_ARGS_TOO_BIG || status == ERR_TOO_MANY_COMMANDS){
+		    printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
+		    return status;
+	    }
 	    printf(CMD_OK_HEADER, clist.num);
 	    for (int i = 0; i< clist.num; i++ ){
-		    printf("Executable: %s\n", clist.commands[i].exe);
-		    printf("Arguments: %s\n", clist.commands[i].args);
+		    printf("<%d> %s", i+1, clist.commands[i].exe);
+		    if (clist.commands[i].args[0] != '\0' ){
+			printf("[%s]\n", clist.commands[i].args);
+		    }
 	    }
+	    memset(cmd_buff, 0, ARG_MAX * sizeof(char));
+
 	}
+	free(cmd_buff);
+	return 0;
 	}
