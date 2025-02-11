@@ -34,6 +34,53 @@
  */
 int build_cmd_list(char *cmd_line, command_list_t *clist)
 {
-    printf(M_NOT_IMPL);
-    return EXIT_NOT_IMPL;
+	char* token = strtok(cmd_line, PIPE_STRING);
+	int i = 0;
+
+	while (token != NULL){
+
+		command_t current;
+		memset(&current, 0, sizeof(command_t));
+
+		while (*token == SPACE_CHAR){
+			token++;
+		}
+
+		int j = 0;
+		while (*token != SPACE_CHAR){
+			if (*token == '\0'){
+				break;
+			}
+			current.exe[j] = *token;
+			j++;
+			token++;
+			if (j>EXE_MAX){
+				return ERR_CMD_OR_ARGS_TOO_BIG;
+			}
+		}
+		current.exe[j] = '\0';
+		if (*token == '\0'){
+			token = strtok(NULL, PIPE_STRING);
+		}
+		else{
+			j = 0;
+			while (*token != '\0'){
+				current.args[j] = *token;
+				token++;
+				j++;
+				if (j>ARG_MAX){
+                                	return ERR_CMD_OR_ARGS_TOO_BIG;
+                        }
+			}
+		}	
+		memcpy(&clist->commands[i], &current, sizeof(command_t));
+		token = strtok(NULL, PIPE_STRING);
+		i++;
+		if (i>CMD_MAX){
+			return ERR_TOO_MANY_COMMANDS;
+		}
+
+
+    return OK;
+}
 }
