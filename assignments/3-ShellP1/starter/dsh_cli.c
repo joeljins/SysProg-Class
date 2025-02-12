@@ -46,40 +46,49 @@
  */
 int main()
 {
-	char *cmd_buff = (char*)malloc(ARG_MAX * sizeof(char));
+	char *cmd_buff = (char*)malloc(SH_CMD_MAX * sizeof(char));
+	if (cmd_buff == NULL){
+		exit(-1);
+	}
 	int rc = 0;
 	command_list_t clist;
 	while(1){
 	    printf("%s", SH_PROMPT);
-	    if (fgets(cmd_buff, ARG_MAX, stdin) == NULL){
-		return -1;
+
+	    if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL){
+		    free(cmd_buff);
+		exit(WARN_NO_CMDS);
 	    }
+
+	    cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
+	    int status = build_cmd_list(cmd_buff, &clist);
+
 	    if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
 		    printf("%s", CMD_WARN_NO_CMD);
-		    return WARN_NO_CMDS;
-	    }	
-	    cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
-	    if (strcmp(cmd_buff, EXIT_CMD) == 0){
+		    //return WARN_NO_CMDS;
+	    }
+	    else if (strcmp(cmd_buff, EXIT_CMD) == 0){
 	        exit(rc);
 	       }
-	    int status = build_cmd_list(cmd_buff, &clist);
-	    if (status == ERR_TOO_MANY_COMMANDS){
-		    return status;
-	    }
-	    if (status == ERR_CMD_OR_ARGS_TOO_BIG || status == ERR_TOO_MANY_COMMANDS){
+	    else if (status == ERR_CMD_OR_ARGS_TOO_BIG || status == ERR_TOO_MANY_COMMANDS){
 		    printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
-		    return status;
 	    }
-	    printf(CMD_OK_HEADER, clist.num);
-	    for (int i = 0; i< clist.num; i++ ){
-		    printf("<%d> %s", i+1, clist.commands[i].exe);
-		    if (clist.commands[i].args[0] != '\0' ){
-			printf("[%s]\n", clist.commands[i].args);
+	    else{
+		    printf(CMD_OK_HEADER, clist.num);
+		    for (int i = 0; i< clist.num; i++ ){
+			    printf("<%d> %s", i+1, clist.commands[i].exe);
+			    if (clist.commands[i].args[0] != '\0' ){
+				printf("[%s]\n", clist.commands[i].args);
+			    }
+			    else{
+				    printf("\n");
+			    }
 		    }
 	    }
-	    memset(cmd_buff, 0, ARG_MAX * sizeof(char));
+	    memset(cmd_buff, 0, SH_CMD_MAX * sizeof(char));
+	    memset(&clist, 0, sizeof(command_list_t));
 
 	}
 	free(cmd_buff);
-	return 0;
+	exit(OK);
 	}

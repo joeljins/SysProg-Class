@@ -52,7 +52,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 			current.exe[j] = *token;
 			j++;
 			token++;
-			if (j>EXE_MAX){
+			if (j>=EXE_MAX){
 				return ERR_CMD_OR_ARGS_TOO_BIG;
 			}
 		}
@@ -60,16 +60,30 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 		if (*token != '\0'){
 			j = 0;
 			while (*token != '\0'){
+				while (*token == SPACE_CHAR){
+					token++;
+				}
+				if (*(token-1) == SPACE_CHAR && j>0 && *(token+1) != SPACE_CHAR){
+				       current.args[j] = SPACE_CHAR;
+				       j++;
+				}	       
 				current.args[j] = *token;
 				token++;
 				j++;
-				if (j>ARG_MAX){
+				if (j>=ARG_MAX){
                                 	return ERR_CMD_OR_ARGS_TOO_BIG;
                         	}
+			}
+			current.args[j] = '\0';
+			if (strlen(current.args) > ARG_MAX || strlen(current.exe) > EXE_MAX){
+				return ERR_CMD_OR_ARGS_TOO_BIG;
 			}
 		}	
 		memcpy(&clist->commands[i], &current, sizeof(command_t));
 		clist->num = i+1;
+		if (token == NULL){
+			break;
+		}
 		token = strtok(NULL, PIPE_STRING);
 		i++;
 		if (i>CMD_MAX){
