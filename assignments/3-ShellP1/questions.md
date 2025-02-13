@@ -1,11 +1,10 @@
 1. In this assignment I suggested you use `fgets()` to get user input in the main while loop. Why is `fgets()` a good choice for this application?
 
-    > **Answer**:  fgets() is a good choice for this application because it allows you to specify and specific number of bytes to read, allows you to get a single line, as a shell usually accepts a single line with commands and arguments, and allows for simple error handling. 
+    > **Answer**:  fgets() is a good choice for this application because it allows you to specify a specific number of bytes to read, which prevents buffer overflow situations. It reads a single line of text at a time, which is perfect for a shell that usually accepts a single line of commands and arguments. It checks for EOF, allowing for simple error handling. 
 
 2. You needed to use `malloc()` to allocte memory for `cmd_buff` in `dsh_cli.c`. Can you explain why you needed to do that, instead of allocating a fixed-size array?
 
-    > **Answer**:  malloc() is used when the size of the data is unknown at compile time. Because we are storing user input, it is impossible to determine the exact space needed for user input. If necessary, we can increase or decrease the space allocated. Arrays are used for fixed amounts of space, and they cannot be reallocated. 
-
+    > **Answer**:  malloc() is used to allocate memory when the size of the data is unknown at compile time. Because we are storing user input, it is impossible to determine the exact space needed. If necessary, we can increase or decrease the space allocated. Arrays are used for fixed amounts of space, and can lead to wasted memory because they cannot be resized once declared.  
 
 3. In `dshlib.c`, the function `build_cmd_list(`)` must trim leading and trailing spaces from each command before storing it. Why is this necessary? If we didn't trim spaces, what kind of issues might arise when executing commands in our shell?
 
@@ -15,7 +14,7 @@
 
 - One topic you should have found information on is "redirection". Please provide at least 3 redirection examples that we should implement in our custom shell, and explain what challenges we might have implementing them.
 
-    > **Answer**: You can create file and redirect standard output to it. A challenge might be creating the file and determining what data or how much data should be redirected. You can redirect standard output to be appeneded to a file.  A challenge might be avoiding deletion of existing data from the file. You can redirect standard error to a file. A challenge might be storing the data in a way that is helpful for debugging and finding the root of the error. 
+    > **Answer**: You can create file and redirect standard output to it. A challenge might be creating the file and determining what data or how much data should be redirected. You can redirect standard output to be appeneded to a file.  A challenge might be avoiding deletion of existing data from the file and finding the position to insert the data. You can redirect standard error to a file. A challenge might be storing the data in a way that is helpful for debugging and finding the root of the error. 
 
 - You should have also learned about "pipes". Redirection and piping both involve controlling input and output in the shell, but they serve different purposes. Explain the key differences between redirection and piping.
 
@@ -27,4 +26,4 @@
 
 - How should our custom shell handle errors from commands that fail? Consider cases where a command outputs both STDOUT and STDERR. Should we provide a way to merge them, and if so, how?
 
-    > We should provide a way to merge them, so that it could be easier to see the cause of the errors. Both STDOUT and STDERR could be redirected to a file that contains the STDOUT and the STDERR that comes along with it. 
+    > We should provide a way to merge them, so that it could be easier to see the cause of the errors. Both STDOUT and STDERR could be redirected to a file that contains the STDOUT and the STDERR that comes along with it. We can also display both streams to the console. 

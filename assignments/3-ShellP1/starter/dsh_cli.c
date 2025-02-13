@@ -4,6 +4,9 @@
 
 #include "dshlib.h"
 
+#include <unistd.h>  
+#include <fcntl.h> 
+
 /*
  * Implement your main function by building a loop that prompts the
  * user for input.  Use the SH_PROMPT constant from dshlib.h and then
@@ -57,19 +60,36 @@ int main()
 
 	    if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL){
 		    free(cmd_buff);
-		exit(WARN_NO_CMDS);
+		exit(rc);
 	    }
-
+	    
 	    cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
 	    int status = build_cmd_list(cmd_buff, &clist);
 
 	    if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
 		    printf("%s", CMD_WARN_NO_CMD);
-		    //return WARN_NO_CMDS;
 	    }
 	    else if (strcmp(cmd_buff, EXIT_CMD) == 0){
 	        exit(rc);
 	       }
+	    else if (strcmp(cmd_buff, "dragon") == 0) {
+		     // printf("Accepted command");
+		     int fd = open("binary.txt", O_RDONLY);
+		     if (fd == -1){
+			     printf("Error opening file");
+			     exit(rc);
+		     }
+		     char buffer[9];
+		     ssize_t bytes_read;
+		     while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) {
+			     buffer[8] = '\0';
+			     int decimal = strtol(buffer, NULL, 2);
+			     char character = (char)decimal;
+			     printf("%c", character); 
+		     }
+		     printf("\n");
+	    
+	    }
 	    else if (status == ERR_CMD_OR_ARGS_TOO_BIG || status == ERR_TOO_MANY_COMMANDS){
 		    printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
 	    }
@@ -90,5 +110,5 @@ int main()
 
 	}
 	free(cmd_buff);
-	exit(OK);
+	exit(rc);
 	}
