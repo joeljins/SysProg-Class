@@ -53,10 +53,69 @@
  */
 int exec_local_cmd_loop()
 {
-    char *cmd_buff;
-    int rc = 0;
-    cmd_buff_t cmd;
+	//char *cmd_buff;
+	int rc = 0;
+	cmd_buff_t cmd;
 
+	char *cmd_buff = (char*)malloc(SH_CMD_MAX * sizeof(char));
+	if (cmd_buff == NULL){
+		exit(-1);
+	}
+	while(1){
+	    printf("%s", SH_PROMPT);
+
+	    if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL){
+		    free(cmd_buff);
+		exit(rc);
+	    }
+	    
+	    cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
+
+	    if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
+		    printf("%s", CMD_WARN_NO_CMD);
+	    }
+	    else if (strcmp(cmd_buff, EXIT_CMD) == 0){
+	        exit(rc);
+	       }
+	    else if (strcmp(cmd_buff, "dragon") == 0) {
+		     // printf("Accepted command");
+		     int fd = open("binary.txt", O_RDONLY);
+		     if (fd == -1){
+			     printf("Error opening file");
+			     exit(rc);
+		     }
+		     char buffer[9];
+		     ssize_t bytes_read;
+		     while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) {
+			     buffer[8] = '\0';
+			     int decimal = strtol(buffer, NULL, 2);
+			     char character = (char)decimal;
+			     printf("%c", character); 
+		     }
+		     printf("\n");
+	    
+	    }
+	    else if (strncmp(cmd_buff, "cd", 2) == 0){
+		   while (*cmd_buff == SPACE_CHAR){
+			   cmd_buff++;
+			   if (*cmd_buff == NULL){
+				   break;
+			   }
+		   }
+		   char dir[20];
+		   if (*cmd_buff != NULL){
+		   	strcpy(cmd_buff, dir);
+			chdir(dir);
+		   }
+		   
+	    }
+	    else{
+		    printf("Hello");
+	    }
+
+	}
+	free(cmd_buff);
+	exit(rc);
     // TODO IMPLEMENT MAIN LOOP
 
     // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
@@ -67,5 +126,5 @@ int exec_local_cmd_loop()
     // TODO IMPLEMENT if not built-in command, fork/exec as an external command
     // for example, if the user input is "ls -l", you would fork/exec the command "ls" with the arg "-l"
 
-    return OK;
+	return OK;
 }
