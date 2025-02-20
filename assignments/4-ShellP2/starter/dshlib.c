@@ -71,41 +71,41 @@ int exec_local_cmd_loop()
 	    
 	    cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
 	    memset(&cmd, 0, sizeof(cmd_buff_t));
-	    cmd->_cmd_buffer = cmd_buff;
+	    cmd._cmd_buffer = cmd_buff;
 	    while (*cmd_buff == SPACE_CHAR){
 		    cmd_buff++;
 	    }
 	    while( *cmd_buff != '\0'){
-
 		    bool quote = false;
 		    if (*cmd_buff != '"'){
 			    quote = true;
-			    *(cmd->argv)='"';
-			    (cmd->argv)++;
+			    *(cmd.argv)='"';
+			    (cmd.argv)++;
 		    }
 		    else{
 			    quote = false;
-			    *(cmd->argv)=*cmd_buff;
-			     (cmd->argv)++;
+			    *(cmd.argv)=*cmd_buff;
+			     (cmd.argv)++;
 			     cmd_buff++;
 		    } 
+		    char condition = '"';
 		    if (quote){
-			    char condition = '"';
+			    condition = '"';
 		    }
 		    else{
-			    char condition = SPACE_CHAR;
+			    condition = SPACE_CHAR;
 		    }
 		    while(*cmd_buff != condition){
-			   *(cmd->argv) = *cmd_buff; 
-			   cmd->argv++;
+			   *(cmd.argv) = *cmd_buff; 
+			   cmd.argv++;
 			   cmd_buff++;
 		    }
 		    if (!quote){
-			    *(cmd->argv) = '"';
-			    cmd->argv++;
+			    *(cmd.argv) = '"';
+			    cmd.argv++;
 		    }
-		    *(cmd->argv) = ',';
-                     cmd->argv++;
+		    *(cmd.argv) = ',';
+                     cmd.argv++;
 
 	    }
 	    if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
