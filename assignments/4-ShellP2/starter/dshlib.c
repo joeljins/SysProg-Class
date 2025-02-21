@@ -51,6 +51,111 @@
  *  Standard Library Functions You Might Want To Consider Using (assignment 2+)
  *      fork(), execvp(), exit(), chdir()
  */
+int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff){
+	#define QUOTE_CHAR '"' 
+	int count = -1;
+	int i;
+    	bool quote; 
+    	char *buffer = (char *)malloc(ARG_MAX * sizeof(char)); 
+	if (buffer == NULL){
+		return ERR_MEMORY;
+	}
+    	char *pointer = buffer;
+    	while( *cmd_line != '\0'){
+		if (count > 7){
+			return ERR_TOO_MANY_COMMANDS;
+		}
+		i = 0;
+	    	while (*cmd_line == SPACE_CHAR){
+		    cmd_line++;
+	    	}
+	    	if (*cmd_line == QUOTE_CHAR){
+		    	quote = true;
+		    	*pointer = *cmd_line;
+		    	pointer++;
+		    	cmd_line++;
+			i++;
+	    	}
+	    	else{
+		    	quote = false;
+	    	} 
+	    	char condition;
+	    	if (quote == true){
+		    	condition = QUOTE_CHAR;
+	    	}
+	    	else{
+		    	condition = SPACE_CHAR;
+	    	}
+	    	while(*cmd_line != condition && *cmd_line != '\0'){
+		   	*pointer = *cmd_line; 
+		   	pointer++;
+		   	cmd_line++;
+			i++;
+			if (i > ARG_MAX){
+				return ERR_CMD_OR_ARGS_TOO_BIG;
+			}
+	    	}
+		if (quote){
+			*pointer = *cmd_line;
+			cmd_line++;
+			pointer++;
+			
+		}
+	    	*pointer = '\0';
+
+		count++;
+	    	cmd_buff->argv[count] = (char*)malloc(ARG_MAX * sizeof(char));	
+	    	if (cmd_buff->argv[count] == NULL){
+		    return ERR_MEMORY;
+	    	}
+	    	strncpy(cmd_buff->argv[count], buffer, ARG_MAX);
+	    	// printf("%s\n", cmd_buff->argv[count]);
+	    	memset(buffer, 0, ARG_MAX);
+	    	pointer = buffer;
+    }
+
+    free(buffer);
+    cmd_buff->argc = count;
+    cmd_buff->_cmd_buffer = cmd_line;
+    return OK;
+}
+Built_In_Cmds match_command(const char *input){
+	if (strcmp(input, "exit") == 0){
+		return BI_CMD_EXIT;
+	}
+	if (strcmp(input, "cd") == 0){
+		return BI_CMD_CD;
+		}	
+	if (strcmp(input, "dragon") == 0){
+                return BI_CMD_DRAGON;
+        }
+	return BI_NOT_BI;
+}
+Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd){		
+	Built_In_Cmds command = match_command(cmd->argv[0]);
+	switch(command){
+		case BI_CMD_EXIT:
+			exit(0);
+		case BI_CMD_CD:
+			if (cmd->argc == 0) {
+            			return BI_EXECUTED;
+        		}
+			printf("%s", cmd->argv[1]);
+			if (chdir(cmd->argv[1]) != -1){
+				char s[100];
+
+    				printf("%s\n", getcwd(s, 100));
+				return BI_EXECUTED;
+			}
+char s[100]; 
+ 
+    // printing current working directory 
+    printf("%s\n", getcwd(s, 100)); 
+			printf("failed");
+			return BI_NOT_BI;
+	}
+	return BI_NOT_BI;
+}
 int exec_local_cmd_loop()
 {
 	char *cmd_buff;
@@ -61,98 +166,31 @@ int exec_local_cmd_loop()
 	if (cmd_buff == NULL){
 		exit(-1);
 	}
+
 	while(1){
-	    printf("%s", SH_PROMPT);
-
-	    if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL){
-		    free(cmd_buff);
-		exit(rc);
-	    }
-	    
-	    cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
-	    memset(&cmd, 0, sizeof(cmd_buff_t));
-	    cmd._cmd_buffer = cmd_buff;
-	    while (*cmd_buff == SPACE_CHAR){
-		    cmd_buff++;
-	    }
-	    while( *cmd_buff != '\0'){
-		    bool quote = false;
-		    if (*cmd_buff != '"'){
-			    quote = true;
-			    *(cmd.argv)='"';
-			    (cmd.argv)++;
-		    }
-		    else{
-			    quote = false;
-			    *(cmd.argv)=*cmd_buff;
-			     (cmd.argv)++;
-			     cmd_buff++;
-		    } 
-		    char condition = '"';
-		    if (quote){
-			    condition = '"';
-		    }
-		    else{
-			    condition = SPACE_CHAR;
-		    }
-		    while(*cmd_buff != condition){
-			   *(cmd.argv) = *cmd_buff; 
-			   cmd.argv++;
-			   cmd_buff++;
-		    }
-		    if (!quote){
-			    *(cmd.argv) = '"';
-			    cmd.argv++;
-		    }
-		    *(cmd.argv) = ',';
-                     cmd.argv++;
-
-	    }
-	    if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
-		    printf("%s", CMD_WARN_NO_CMD);
-	    }
-	    else if (strcmp(cmd_buff, EXIT_CMD) == 0){
-	        exit(rc);
-	       }
-	    else if (strcmp(cmd_buff, "dragon") == 0) {
-		     // printf("Accepted command");
-		     int fd = open("binary.txt", O_RDONLY);
-		     if (fd == -1){
-			     printf("Error opening file");
-			     exit(rc);
-		     }
-		     char buffer[9];
-		     ssize_t bytes_read;
-		     while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) {
-			     buffer[8] = '\0';
-			     int decimal = strtol(buffer, NULL, 2);
-			     char character = (char)decimal;
-			     printf("%c", character); 
-		     }
-		     printf("\n");
-	    
-	    }
-	    else if (strncmp(cmd_buff, "cd", 2) == 0){
-		   while (*cmd_buff == SPACE_CHAR){
-			   cmd_buff++;
-			   if (*cmd_buff == NULL){
-				   break;
-			   }
-		   }
-		   char dir[20];
-		   if (*cmd_buff != NULL){
-		   	strcpy(cmd_buff, dir);
-			chdir(dir);
-		   }
-		   
-	    }
-	    else{
-		    printf("Hello");
-	    }
+	    	printf("%s", SH_PROMPT);
+	    	if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL){
+			free(cmd_buff);
+			exit(rc);
+	    	}
+	    	cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
+	    	memset(&cmd, 0, sizeof(cmd_buff_t));
+	    	if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
+		    	printf("%s", CMD_WARN_NO_CMD);
+	    	}
+		rc = build_cmd_buff(cmd_buff, &cmd);
+		if (rc != OK){
+			return rc;
+		}
+		Built_In_Cmds command = match_command(cmd.argv[0]); 
+		if (command != BI_NOT_BI){
+			exec_built_in_cmd(&cmd);
+		}
 
 	}
 	free(cmd_buff);
 	exit(rc);
+	
     // TODO IMPLEMENT MAIN LOOP
 
     // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
