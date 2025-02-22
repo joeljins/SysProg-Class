@@ -53,69 +53,50 @@
  */
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff){
 	#define QUOTE_CHAR '"' 
-	int count = -1;
-	int i;
-    	bool quote; 
-    	char *buffer = (char *)malloc(ARG_MAX * sizeof(char)); 
+	int count = 0;
+    	bool quote = false; 
+    	char *buffer = (char *)malloc(strlen(cmd_line)+1 * sizeof(char)); 
 	if (buffer == NULL){
 		return ERR_MEMORY;
 	}
+	strcpy(buffer, cmd_line);
     	char *pointer = buffer;
-    	while( *cmd_line != '\0'){
-		if (count > 7){
-			return ERR_TOO_MANY_COMMANDS;
-		}
-		i = 0;
-	    	while (*cmd_line == SPACE_CHAR){
-		    cmd_line++;
+    	while (*pointer){
+	    	while (*pointer == SPACE_CHAR && quote == false){
+		    pointer++;
 	    	}
-	    	if (*cmd_line == QUOTE_CHAR){
+
+		if (*pointer == '\0'){
+			break;
+		}
+
+	    	if (*pointer == QUOTE_CHAR){
 		    	quote = true;
-		    	*pointer = *cmd_line;
 		    	pointer++;
-		    	cmd_line++;
-			i++;
 	    	}
-	    	else{
-		    	quote = false;
-	    	} 
-	    	char condition;
-	    	if (quote == true){
-		    	condition = QUOTE_CHAR;
-	    	}
-	    	else{
-		    	condition = SPACE_CHAR;
-	    	}
-	    	while(*cmd_line != condition && *cmd_line != '\0'){
-		   	*pointer = *cmd_line; 
-		   	pointer++;
-		   	cmd_line++;
-			i++;
-			if (i > ARG_MAX){
-				return ERR_CMD_OR_ARGS_TOO_BIG;
-			}
-	    	}
-		if (quote){
-			*pointer = *cmd_line;
-			cmd_line++;
-			pointer++;
-			
-		}
-	    	*pointer = '\0';
 
+		cmd_buff->argv[count] = pointer;
 		count++;
-	    	cmd_buff->argv[count] = (char*)malloc(ARG_MAX * sizeof(char));	
-	    	if (cmd_buff->argv[count] == NULL){
-		    return ERR_MEMORY;
-	    	}
-	    	strncpy(cmd_buff->argv[count], buffer, ARG_MAX);
-	    	// printf("%s\n", cmd_buff->argv[count]);
-	    	memset(buffer, 0, ARG_MAX);
-	    	pointer = buffer;
-    }
 
-    free(buffer);
-    cmd_buff->argc = count;
+		char condition = quote ? QUOTE_CHAR : SPACE_CHAR;
+
+	    	while(*pointer && *pointer != condition){
+			if (*pointer == '\0'){
+				break;
+			}
+		   	pointer++;
+	    	}
+	    	*pointer = '\0';
+		pointer++;
+		quote = false;
+
+		if (count >= CMD_ARGV_MAX - 1) {
+            		free(buffer);
+            		return ERR_CMD_OR_ARGS_TOO_BIG;
+        }
+    }
+	cmd_buff->argc = count;
+	cmd_buff->argv[count] = NULL;
     cmd_buff->_cmd_buffer = cmd_line;
     return OK;
 }
@@ -134,27 +115,27 @@ Built_In_Cmds match_command(const char *input){
 Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd){		
 	Built_In_Cmds command = match_command(cmd->argv[0]);
 	switch(command){
-		case BI_CMD_EXIT:
-			exit(0);
-		case BI_CMD_CD:
-			if (cmd->argc == 0) {
-            			return BI_EXECUTED;
-        		}
-			printf("%s", cmd->argv[1]);
-			if (chdir(cmd->argv[1]) != -1){
-				char s[100];
-
-    				printf("%s\n", getcwd(s, 100));
-				return BI_EXECUTED;
-			}
-char s[100]; 
- 
-    // printing current working directory 
-    printf("%s\n", getcwd(s, 100)); 
-			printf("failed");
+		case BI_NOT_BI:
 			return BI_NOT_BI;
+		case BI_CMD_CD:
+			if (cmd->argc == 1) {
+            			break;
+        		}
+			else if (cmd->argc > 2){
+				perror("Too many args");
+			}
+			else if (chdir(cmd->argv[1]) == -1){
+				perror("Invalid directory");
+			}
+			else{
+			}
+			break;
+		case BI_CMD_EXIT:
+			return command;
+		default:
+			return command;
 	}
-	return BI_NOT_BI;
+	return command;
 }
 int exec_local_cmd_loop()
 {
@@ -170,36 +151,46 @@ int exec_local_cmd_loop()
 	while(1){
 	    	printf("%s", SH_PROMPT);
 	    	if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL){
-			free(cmd_buff);
-			exit(rc);
+			break;
 	    	}
 	    	cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
 	    	memset(&cmd, 0, sizeof(cmd_buff_t));
 	    	if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
 		    	printf("%s", CMD_WARN_NO_CMD);
+			continue;
 	    	}
 		rc = build_cmd_buff(cmd_buff, &cmd);
 		if (rc != OK){
-			return rc;
+			if (rc == ERR_CMD_OR_ARGS_TOO_BIG){
+				printf("Too many arguments");
+			}
+			continue;
 		}
 		Built_In_Cmds command = match_command(cmd.argv[0]); 
 		if (command != BI_NOT_BI){
-			exec_built_in_cmd(&cmd);
+			Built_In_Cmds bic = exec_built_in_cmd(&cmd);
+			if (bic == BI_CMD_EXIT){
+				return 0;
+			}
+			continue;
 		}
 
+		pid_t pid = fork();
+		if (pid == 0){
+			char **args = cmd.argv;
+			execvp(args[0], args);
+			perror("execvp");
+			exit(ERR_EXEC_CMD);
+		}
+		else if (pid > 0){
+			int status;
+			waitpid(pid, &status, 0);
+
+		}
+		else{
+			perror("fork failed");
+		}
 	}
 	free(cmd_buff);
-	exit(rc);
-	
-    // TODO IMPLEMENT MAIN LOOP
-
-    // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
-
-    // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
-    // the cd command should chdir to the provided directory; if no directory is provided, do nothing
-
-    // TODO IMPLEMENT if not built-in command, fork/exec as an external command
-    // for example, if the user input is "ls -l", you would fork/exec the command "ls" with the arg "-l"
-
 	return OK;
 }
