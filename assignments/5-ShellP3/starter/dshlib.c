@@ -52,6 +52,94 @@
  *  Standard Library Functions You Might Want To Consider Using (assignment 2+)
  *      fork(), execvp(), exit(), chdir()
  */
+
+int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff){
+	#define QUOTE_CHAR '"' 
+	int count = 0;
+    	bool quote = false; 
+    	char *buffer = (char *)malloc(strlen(cmd_line)+1 * sizeof(char)); 
+	if (buffer == NULL){
+		return ERR_MEMORY;
+	}
+	strcpy(buffer, cmd_line);
+    	char *pointer = buffer;
+    	while (*pointer){
+	    	while (*pointer == SPACE_CHAR && quote == false){
+		    pointer++;
+	    	}
+
+		if (*pointer == '\0'){
+			break;
+		}
+
+	    	if (*pointer == QUOTE_CHAR){
+		    	quote = true;
+		    	pointer++;
+	    	}
+
+		cmd_buff->argv[count] = pointer;
+		count++;
+
+		char condition = quote ? QUOTE_CHAR : SPACE_CHAR;
+
+	    	while(*pointer && *pointer != condition){
+			if (*pointer == '\0'){
+				break;
+			}
+		   	pointer++;
+	    	}
+	    	*pointer = '\0';
+		pointer++;
+		quote = false;
+
+		if (count >= CMD_ARGV_MAX - 1) {
+            		free(buffer);
+            		return ERR_CMD_OR_ARGS_TOO_BIG;
+        }
+    }
+	cmd_buff->argc = count;
+	cmd_buff->argv[count] = NULL;
+    cmd_buff->_cmd_buffer = cmd_line;
+    return OK;
+}
+
+int build_cmd_list(char *cmd_line, command_list_t *clist)
+{
+	char* token = strtok(cmd_line, PIPE_STRING);
+	int i = 0;
+
+    command_t current;
+    command_buff_t buff;
+
+	while (token != NULL){
+		memset(&current, 0, sizeof(command_t));
+        memset(&buff, 0, sizeof(command_buff_t));
+        build_cmd_buff(token, &buff);
+
+        current.exe = buff->argv[0];
+        int j = 1;
+        while (*(buff->argv[j]) != NULL){
+            current.eve
+        }
+
+        while (*token != NULL){
+            token++;
+        }
+		memcpy(&clist->commands[i], &current, sizeof(command_t));
+		clist->num = i+1;
+		if (token == NULL){
+			break;
+		}
+		token = strtok(NULL, PIPE_STRING);
+		i++;
+		if (i>CMD_MAX){
+			return ERR_TOO_MANY_COMMANDS;
+		}
+
+}
+return OK;
+}
+
 int exec_local_cmd_loop()
 {
    
