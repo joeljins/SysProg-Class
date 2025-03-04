@@ -182,7 +182,7 @@ int exec_local_cmd_loop()
 {
 	char *cmd_buff;
 	int rc = 0;
-	cmd_buff_t cmd;
+	clist_t clist; 
 
 	cmd_buff = (char*)malloc(SH_CMD_MAX * sizeof(char));
 	if (cmd_buff == NULL){
@@ -195,41 +195,48 @@ int exec_local_cmd_loop()
 			break;
 	    	}
 	    	cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
-	    	memset(&cmd, 0, sizeof(cmd_buff_t));
+	    	memset(&clist, 0, sizeof(clist_t));
 	    	if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
 		    	printf("%s", CMD_WARN_NO_CMD);
 			continue;
 	    	}
-		rc = build_cmd_buff(cmd_buff, &cmd);
+		rc = build_cmd_list(cmd_buff, &clist);
 		if (rc != OK){
 			if (rc == ERR_CMD_OR_ARGS_TOO_BIG){
 				printf("Too many arguments");
 			}
 			continue;
 		}
-		Built_In_Cmds command = match_command(cmd.argv[0]); 
-		if (command != BI_NOT_BI){
-			Built_In_Cmds bic = exec_built_in_cmd(&cmd);
-			if (bic == BI_CMD_EXIT){
-				return 0;
+		int i = 0;
+		while (true){
+			Built_In_Cmds command = match_command(clist.commnds[i].argv[0]); 
+			if (command != BI_NOT_BI){
+				Built_In_Cmds bic = exec_built_in_cmd(&cmd);
+				if (bic == BI_CMD_EXIT){
+					return 0;
+				}
+				continue;
 			}
-			continue;
-		}
 
-		pid_t pid = fork();
-		if (pid == 0){
-			char **args = cmd.argv;
-			execvp(args[0], args);
-			perror("execvp");
-			exit(ERR_EXEC_CMD);
-		}
-		else if (pid > 0){
-			int status;
-			waitpid(pid, &status, 0);
+			pid_t pid = fork();
+			if (pid == 0){
+				char **args = cmd.argv;
+				execvp(args[0], args);
+				perror("execvp");
+				exit(ERR_EXEC_CMD);
+			}
+			else if (pid > 0){
+				int status;
+				waitpid(pid, &status, 0);
 
-		}
-		else{
-			perror("fork failed");
+			}
+			else{
+				perror("fork failed");
+			}
+			i++;
+			if (clist.commnds[i] == NULL){
+				break;
+			}
 		}
 	}
 	free(cmd_buff);
