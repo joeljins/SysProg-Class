@@ -116,14 +116,14 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 {
 	char *token = strtok(cmd_line, PIPE_STRING);
 	int i = 0;
-	command_buff_t buff;
+	cmd_buff_t buff;
 
 	while (token != NULL)
 	{
-		memset(&buff, 0, sizeof(command_buff_t));
+		memset(&buff, 0, sizeof(cmd_buff_t));
 		build_cmd_buff(token, &buff);
 
-		memcpy(&clist->commands[i], &buff, sizeof(command_buff_t));
+		memcpy(&clist->commands[i], &buff, sizeof(cmd_buff_t));
 		for (int j = 0; j < buff.argc; j++) {
 			clist->commands[i].argv[j] = strdup(buff.argv[j]);
 		}
