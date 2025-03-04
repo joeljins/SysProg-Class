@@ -209,32 +209,32 @@ int exec_local_cmd_loop()
 		}
 		int i = 0;
 		while (true){
-			Built_In_Cmds command = match_command(clist.commnds[i].argv[0]); 
+			Built_In_Cmds command = match_command(clist.commands[i].argv[0]); 
 			if (command != BI_NOT_BI){
-				Built_In_Cmds bic = exec_built_in_cmd(&cmd);
+				Built_In_Cmds bic = exec_built_in_cmd(&clist.commands[i]);
 				if (bic == BI_CMD_EXIT){
 					return 0;
 				}
-				continue;
-			}
-
-			pid_t pid = fork();
-			if (pid == 0){
-				char **args = cmd.argv;
-				execvp(args[0], args);
-				perror("execvp");
-				exit(ERR_EXEC_CMD);
-			}
-			else if (pid > 0){
-				int status;
-				waitpid(pid, &status, 0);
-
 			}
 			else{
-				perror("fork failed");
+				pid_t pid = fork();
+				if (pid == 0){
+					char **args = clist.commands[i].argv;
+					execvp(args[0], args);
+					perror("execvp");
+					exit(ERR_EXEC_CMD);
+				}
+				else if (pid > 0){
+					int status;
+					waitpid(pid, &status, 0);
+	
+				}
+				else{
+					perror("fork failed");
+				}
 			}
 			i++;
-			if (clist.commnds[i] == NULL){
+			if (clist.commands[i].argv[0] == NULL){
 				break;
 			}
 		}
