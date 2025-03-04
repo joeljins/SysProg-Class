@@ -182,7 +182,7 @@ int exec_local_cmd_loop()
 {
 	char *cmd_buff;
 	int rc = 0;
-	clist_t clist; 
+	command_list_t clist; 
 
 	cmd_buff = (char*)malloc(SH_CMD_MAX * sizeof(char));
 	if (cmd_buff == NULL){
@@ -195,7 +195,7 @@ int exec_local_cmd_loop()
 			break;
 	    	}
 	    	cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
-	    	memset(&clist, 0, sizeof(clist_t));
+	    	memset(&clist, 0, sizeof(command_list_t));
 	    	if (cmd_buff[0] == '\0' || cmd_buff[0] == '\n') {
 		    	printf("%s", CMD_WARN_NO_CMD);
 			continue;
