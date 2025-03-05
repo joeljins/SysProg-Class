@@ -67,6 +67,9 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 	char *pointer = buffer;
 	while (*pointer)
 	{
+		if (*pointer == PIPE_CHAR && quote == false){
+			return ERR_CMD_ARGS_BAD;
+		}
 		while (*pointer == SPACE_CHAR && quote == false)
 		{
 			pointer++;
@@ -109,6 +112,9 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 	cmd_buff->argc = count;
 	cmd_buff->argv[count] = NULL;
 	cmd_buff->_cmd_buffer = cmd_line;
+	if(count ==0){
+		return ERR_CMD_ARGS_BAD;
+	}
 	return OK;
 }
 
@@ -121,7 +127,9 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 	while (token != NULL)
 	{
 		memset(&buff, 0, sizeof(cmd_buff_t));
-		build_cmd_buff(token, &buff);
+		if (build_cmd_buff(token, &buff) != OK){
+			return ERR_CMD_ARGS_BAD;
+		}
 
 		memcpy(&clist->commands[i], &buff, sizeof(cmd_buff_t));
 		for (int j = 0; j < buff.argc; j++)
@@ -197,7 +205,7 @@ int execute_pipeline(command_list_t *clist){
     pid_t pids[num_commands];        // Array to store process IDs
 
     // Create all necessary pipes
-    for (int i = 0; i < num_commands - 1; i++) {
+    for (int i = 0; i < num_commands; i++) {
         if (pipe(pipes[i]) == -1) {
             perror("pipe");
             exit(EXIT_FAILURE);
@@ -212,7 +220,7 @@ int execute_pipeline(command_list_t *clist){
 			Built_In_Cmds bic = exec_built_in_cmd(&clist->commands[i]);
 			if (bic == BI_CMD_EXIT)
 			{
-				return 0;
+				return -1;
 			}
 			continue;
 		}
@@ -291,9 +299,12 @@ int exec_local_cmd_loop()
 			{
 				printf("Too many arguments");
 			}
-			continue;
+			break;
 		}
-		execute_pipeline(&clist);
+		rc = execute_pipeline(&clist);
+		if (rc != OK){
+			break;
+		}
 
 	}
 	free(cmd_buff);
