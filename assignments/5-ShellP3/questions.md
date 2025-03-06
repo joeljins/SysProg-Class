@@ -12,4 +12,4 @@ cd needs to change the directory of every process. If it was only passed in a ch
 
 4. Currently, your shell supports a fixed number of piped commands (CMD_MAX). How would you modify your implementation to allow an arbitrary number of piped commands while still handling memory allocation efficiently? What trade-offs would you need to consider?
 
-I would use malloc to dynamically allocate memory.
+After each command has been executed, I would free the memory associated with that command and use it to store a new command. This way, only memory for one command is required to execute an arbitrary number of piped commands. The trade-off would be that access to previous instruction will be gone forever. This is an effective method for piped commands as execution is linear. 
