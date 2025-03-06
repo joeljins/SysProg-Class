@@ -137,3 +137,29 @@ EOF
     # Assertions
     [ "$status" -eq 0 ]
 }
+
+@test "cd applies for child processes" {
+    run "./dsh" <<EOF
+cd bats | ls | grep sh
+EOF
+
+    # Strip all whitespace from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+
+    current_directory=$(pwd)
+
+    # Expected output with all whitespace removed
+     expected_output="assignment_tests.shstudent_tests.shdsh3>dsh3>cmdloopreturned0"
+
+    # Debugging echo commands
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
+
+    # Assertions
+    [ "$status" -eq 0 ]
+}
