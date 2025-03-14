@@ -122,6 +122,25 @@ int boot_server(char *ifaces, int port){
 
     // TODO set up the socket - this is very similar to the demo code
 
+    /* Create local socket. */
+    listen_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_socket == -1) {
+        perror("socket");
+        exit(ERR_RDSH_SERVER);
+    }
+
+     /* Bind socket to socket name. */
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(PORT_NUM);
+
+    ret = bind(listen_socket, (const struct sockaddr *) &addr,
+               sizeof(struct sockaddr_in));
+    if (ret == -1) {
+        perror("accept");
+        exit(EXIT_FAILURE);
+    }
+
     /*
      * Prepare for accepting connections. The backlog size is set
      * to 20. So while one request is being processed other requests
@@ -183,7 +202,15 @@ int process_cli_requests(int svr_socket){
 
     while(1){
         // TODO use the accept syscall to create cli_socket 
+
+        //Establish a connection
+        cli_socket; = accept(svr_socket, NULL, NULL);
+        if (cli_socket; == -1) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
         // and then exec_client_requests(cli_socket)
+       exec_client_requests(cli_socket); 
     }
 
     stop_server(cli_socket);
@@ -246,15 +273,23 @@ int exec_client_requests(int cli_socket) {
 
     while(1) {
         // TODO use recv() syscall to get input
+        rc = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ,0);
+        if (rc == -1) {
+            perror("read error");
+            exit(EXIT_FAILURE);
+        }
 
         // TODO build up a cmd_list
+        build_cmd_list(&io_buff, &cmd_list);
 
         // TODO rsh_execute_pipeline to run your cmd_list
+        rsh_execute_pipeline(cli_socket, &cmd_list) 
 
         // TODO send appropriate respones with send_message_string
         // - error constants for failures
         // - buffer contents from execute commands
         //  - etc.
+        send_message_string(cli_socket, char *buff)
 
         // TODO send_message_eof when done
     }
@@ -308,6 +343,17 @@ int send_message_eof(int cli_socket){
  */
 int send_message_string(int cli_socket, char *buff){
     //TODO implement writing to cli_socket with send()
+     ret = send(data_socket, send_msg, data_len, 0);
+    if (ret == -1) {
+        perror("header write error");
+        exit(EXIT_FAILURE);
+    }
+    if (ret != data_len){
+        printf("error, did not send entire message, sent %d bytes\n", ret);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("\nREQUEST SENT.... WAITING FOR CLIENT RESPONSE...\n\n");
     return WARN_RDSH_NOT_IMPL;
 }
 
