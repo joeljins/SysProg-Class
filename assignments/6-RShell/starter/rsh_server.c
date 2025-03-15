@@ -123,22 +123,32 @@ int boot_server(char *ifaces, int port){
     // TODO set up the socket - this is very similar to the demo code
 
     /* Create local socket. */
-    listen_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_socket == -1) {
+    svr_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (svr_socket == -1) {
         perror("socket");
         exit(ERR_RDSH_SERVER);
     }
 
-     /* Bind socket to socket name. */
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(PORT_NUM);
+    int enable = 1;
+    ret = setsockopt(svr_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+    if (ret < 0) {
+        perror("setsockopt");
+        close(svr_socket);
+        return ERR_RDSH_COMMUNICATION;
+    }
 
-    ret = bind(listen_socket, (const struct sockaddr *) &addr,
+     /* Bind socket to socket name. */
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ifaces); 
+    addr.sin_port = htons(port);
+
+    ret = bind(svr_socket, (const struct sockaddr *) &addr,
                sizeof(struct sockaddr_in));
     if (ret == -1) {
-        perror("accept");
-        exit(EXIT_FAILURE);
+        perror("bind");
+        close(svr_socket);
+        return ERR_RDSH_COMMUNICATION;
     }
 
     /*
@@ -204,15 +214,17 @@ int process_cli_requests(int svr_socket){
         // TODO use the accept syscall to create cli_socket 
 
         //Establish a connection
-        cli_socket; = accept(svr_socket, NULL, NULL);
-        if (cli_socket; == -1) {
+        cli_socket = accept(svr_socket, NULL, NULL);
+        if (cli_socket == -1) {
             perror("accept");
-            exit(EXIT_FAILURE);
+            return ERR_RDSH_COMMUNICATION; 
         }
         // and then exec_client_requests(cli_socket)
-       exec_client_requests(cli_socket); 
+        rc = exec_client_requests(cli_socket); 
+        if (rc == ERR_RDSH_COMMUNICATION || rc == OK_EXIT) {
+            break;
+        }
     }
-
     stop_server(cli_socket);
     return rc;
 }
@@ -280,21 +292,35 @@ int exec_client_requests(int cli_socket) {
         }
 
         // TODO build up a cmd_list
-        build_cmd_list(&io_buff, &cmd_list);
-
+        cmd_rc = build_cmd_list(io_buff, &cmd_list);
+        if (cmd_rc != OK){
+            break;
+        }
         // TODO rsh_execute_pipeline to run your cmd_list
-        rsh_execute_pipeline(cli_socket, &cmd_list) 
+        last_rc = rsh_execute_pipeline(cli_socket, &cmd_list);
+        if (last_rc != OK){
+            break;
+        }
 
         // TODO send appropriate respones with send_message_string
         // - error constants for failures
         // - buffer contents from execute commands
         //  - etc.
-        send_message_string(cli_socket, char *buff)
+        char buff[RDSH_COMM_BUFF_SZ];
+        send_message_string(cli_socket, &buff);
+        rc = send_message_eof(cli_socket);
 
+        if (rc != OK){
+            printf(CMD_ERR_RDSH_COMM);
+            free(io_buff);
+            close(cli_socket);
+            return ERR_RDSH_COMMUNICATION;
+        }
         // TODO send_message_eof when done
+        send_message_eof(cli_socket);
     }
 
-    return WARN_RDSH_NOT_IMPL;
+    return OK; 
 }
 
 /*
@@ -343,18 +369,26 @@ int send_message_eof(int cli_socket){
  */
 int send_message_string(int cli_socket, char *buff){
     //TODO implement writing to cli_socket with send()
-     ret = send(data_socket, send_msg, data_len, 0);
+    size_t msg_len = strlen(buff) + 1;
+    int ret = send(cli_socket, buff, msg_len, 0);
     if (ret == -1) {
         perror("header write error");
-        exit(EXIT_FAILURE);
+        return ERR_RDSH_SERVER;
     }
-    if (ret != data_len){
+    if (ret != msg_len){
         printf("error, did not send entire message, sent %d bytes\n", ret);
-        exit(EXIT_FAILURE);
+        return ERR_RDSH_SERVER;
+        //exit(EXIT_FAILURE);
     }
 
     printf("\nREQUEST SENT.... WAITING FOR CLIENT RESPONSE...\n\n");
-    return WARN_RDSH_NOT_IMPL;
+
+    ret = send_message_eof(cli_socket);
+    if (ret == -1){
+        perror("eof error");
+        return ERR_RDSH_SERVER;
+    }
+    return OK;
 }
 
 
@@ -413,9 +447,60 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
 
     for (int i = 0; i < clist->num; i++) {
         // TODO this is basically the same as the piped fork/exec assignment, except for where you connect the begin and end of the pipeline (hint: cli_sock)
-
         // TODO HINT you can dup2(cli_sock with STDIN_FILENO, STDOUT_FILENO, etc.
 
+		bi_cmd = match_command(clist->commands[i].argv[0]);
+		if (bi_cmd != BI_NOT_BI)
+		{
+			Built_In_Cmds bic = exec_built_in_cmd(&clist->commands[i]);
+			if (bic == BI_CMD_EXIT)
+			{
+				return -1;
+			}
+			continue;
+		}
+
+        pids[i] = fork();
+        if (pids[i] == -1) {
+            perror("fork");
+            exit(0);
+        }
+
+        if (pids[i] == 0) {  // Child process
+            // Set up input pipe for all except first process
+            if (i == 0) {
+                dup2(cli_sock, STDIN_FILENO);  // Get input from cli_sock
+            }
+            if (i > 0) {
+                dup2(pipes[i-1][0], STDIN_FILENO); 
+            }
+            // Set up output for all processes except the last one (stdout)
+            if (i < clist->num - 1) {
+                dup2(pipes[i][1], STDOUT_FILENO);
+            } 
+            else {
+               if (i == clist->num - 1 && !clist->commands[i].output_file) {
+
+                dup2(cli_sock, STDOUT_FILENO);
+
+                dup2(cli_sock, STDERR_FILENO);  // Also redirect stderr to socket
+
+            } 
+            }
+
+            // Close all pipe ends in child
+            for (int j = 0; j < clist->num- 1; j++) {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
+            // Close the socket in child process
+            close(cli_sock);
+
+            // Execute command
+            execvp(clist->commands[i].argv[0], clist->commands[i].argv);
+            perror("execvp");
+            exit(0);
+        }
     }
 
 
